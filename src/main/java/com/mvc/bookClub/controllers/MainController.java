@@ -1,9 +1,11 @@
 package com.mvc.bookClub.controllers;
 
+import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -26,24 +28,31 @@ public class MainController {
 	
 	
 //	Welcome page
-	@GetMapping("/welcome")
-	public String welcomePage() {
-
-		
-		return null;
+	@GetMapping("/welcomePage") // <--- match with PostMapping below and form:form action=""
+	public String welcomePage(HttpSession sess, Model model) {
+		Long userId = (Long) sess.getAttribute("userId"); // <-- need type casting (Long) // *** Need to use ("thisValue") same as * below  
+		model.addAttribute("loggedUser", uServ.findById(userId));
+		return "welcomePage";
 	}
 	
 //	Register if valid
-	@PostMapping("/welcome")
+	@PostMapping("/register") // <--- match with GetMapping above and form:form action=""
 	public String register(
 			@Valid @ModelAttribute("registerUser") User user
 			, BindingResult res
+			, HttpSession sess
 			) {
+		User newUser = uServ.register(user, res); // <--- call additional validation here
+		
 //		If there is any error 
 		if(res.hasErrors()) {
 			return "reglog";
 		}
-		return null;
+		
+//		At this point, user is already registered from register method (in userServices file)
+		sess.setAttribute("userId", newUser.getId()); // <-- ("thisValue") needs to be the same as * above
+//		direct to welcome 
+		return "redirect:/welcomePage";
 	}
 	
 //	Login user if valid
@@ -53,9 +62,11 @@ public class MainController {
 	}
 	
 //	logout by clear session / return to login/register page
-	@GetMapping() 
-	public String logout() {
-		return null;	
+	@GetMapping("/logout") 
+	public String logout(HttpSession sess) {
+		
+		sess.invalidate();
+		return "redirect:/";	
 	}
 	
 }
